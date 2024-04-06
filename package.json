@@ -1,0 +1,17 @@
+{
+  "name": "cosmos-migrator",
+  "version": "1.0.0",
+  "description": "Tool for running CosmosDB migrations (js scripts)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nik Todorov",
+  "license": "ISC",
+  "dependencies": {
+    "@azure/cosmos": "^4.0.0",
+    "dotenv": "^16.4.5",
+    "uuid": "^9.0.1"
+  }
+}
