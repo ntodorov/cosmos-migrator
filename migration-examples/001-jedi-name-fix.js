@@ -7,6 +7,16 @@ exports.containerName = 'jedi';
 exports.run = async function (database, container) {
   console.log('Modifying ref data enactment');
 
+  // just to show how to query. Not real migration - just check for connection. Remove this block
+  const { resources: items } = await container.items
+    .query('SELECT * FROM c')
+    .fetchAll();
+  const firstItem = items[0];
+  console.log(firstItem);
+
+  return;
+  //<< remove to here
+
   // You could load external JSON
   const jsonData = fs.readFileSync(__dirname + '/001-jedi-name-fix.json', {
     encoding: 'utf8',

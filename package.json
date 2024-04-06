@@ -7,10 +7,31 @@
     "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "cosmos-migrator": "src/index.js"
+  },
   "author": "Nik Todorov",
   "license": "ISC",
+  "keywords": [
+    "cosmos",
+    "CosmosDB",
+    "migrations",
+    "db migrations",
+    "schema migrations",
+    "nosql",
+    "Consmos CLI"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ntodorov/cosmos-migrator"
+  },
+  "homepage": "https://github.com/ntodorov/cosmos-migrator#readme",
+  "bugs": {
+    "url": "https://github.com/ntodorov/cosmos-migrator/issues"
+  },
   "dependencies": {
     "@azure/cosmos": "^4.0.0",
+    "commander": "^12.0.0",
     "dotenv": "^16.4.5",
     "uuid": "^9.0.1"
   }
