@@ -15,10 +15,6 @@ program
 program
   .command('migrate')
   .option(
-    '-ude, --useDotEnv',
-    'Use environment variables defined in a .env file instead of command line arguments'
-  )
-  .option(
     '-url, --dbURL <cosmos db endpoint>',
     'Cosmos DB endpoint URL. Can also be set in the environment variable DB_URL'
   )

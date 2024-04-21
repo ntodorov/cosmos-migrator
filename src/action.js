@@ -55,33 +55,29 @@ async function executeMigration(client, scriptPath) {
 }
 
 async function migrate(options) {
-  // Check conditions based on the presence of --useDotenv option
-  if (!options.useDotEnv) {
-    if (!options.dbURL || !options.dbKey || !options.migrationsDir) {
-      console.error(
-        'Error: --dbURL, --dbKey and --migrationsDir options are required unless --useDotEnv is specified.'
-      );
-      process.exit(1); // Exit with an error code.
-    }
-  } else {
-    dotenv.config();
-    if (
-      !process.env.DB_URL ||
-      !process.env.DB_KEY ||
-      !process.env.MIGRATIONS_DIR
-    ) {
-      console.error(
-        'Error: DB_URL, DB_KEY and MIGRATIONS_DIR environment variables are required when using --useDotEnv option.'
-      );
-      process.exit(1); // Exit with an error code.
-    }
-  }
+  dotenv.config();
+
   const endpoint = options.dbURL || process.env.DB_URL;
   const key = options.dbKey || process.env.DB_KEY;
   const migrationsDir = path.resolve(
     process.cwd(),
     options.migrationsDir || process.env.MIGRATIONS_DIR
   );
+
+  const errors = [];
+  if (!endpoint)
+    errors.push('Environment var DB_URL or --dbURL option must be provided!');
+  if (!key)
+    errors.push('Environment var DB_KEY or --dbKey option must be provided!');
+  if (!fs.fileExistsSync(migrationsDir))
+    errors.push(
+      'Environment var MIGRATIONS_DIR or --migrationsDir option must be provided and the folder must exist!'
+    );
+  if (errors.length > 0) {
+    console.error('Errors:');
+    errors.forEach((err) => console.error(err));
+    process.exit(1);
+  }
 
   console.log('Starting migrations execution.');
   // Connect to Cosmos
