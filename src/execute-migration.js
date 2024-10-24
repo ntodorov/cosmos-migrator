@@ -1,5 +1,13 @@
 const path = require('path');
 
+function backupItem(item, scriptFullName, containerName) {
+  //lets backup the item prior change.
+  const currentScript = path.parse(scriptFullName).name;
+  const backupFolder = path.dirname(scriptFullName);
+  const backupFileName = `${backupFolder}/backup-[${currentScript}]-${containerName}-id[${item.id}].json`; //to guarantee unique backup name linked to the script. You may have more than one script.
+  fs.writeFileSync(backupFileName, JSON.stringify(item));
+}
+
 // Execute a migration script
 async function executeMigration(client, scriptPath) {
   //load the migration script
@@ -33,8 +41,30 @@ async function executeMigration(client, scriptPath) {
     return;
   }
 
-  //MAIN WORK HERE: execute the script
-  await script.run(database, container); // Assuming each script has a run method
+  // check if the script has a updateItem method
+  if (typeof script.updateItem === 'function') {
+    if (!script.query)
+      throw new Error('your_srcrip.query is required for updateItem()!');
+
+    // execute the script per item in the container
+    const items = await container.items.query(script.query).fetchAll();
+    for (const item of items.resources) {
+      backupItem(item, scriptPath, script.containerName);
+      const updatedItem = script.updateItem(database, container, item);
+      try {
+        const { resource: replaced } = await container
+          .item(updatedItem.id, undefined)
+          .replace(updatedItem);
+        console.log(`Item with id ${replaced.id} updated`);
+      } catch (error) {
+        console.error(`Failed to update item with id ${item.id} `);
+        console.error(error);
+      }
+    }
+  } else {
+    //execute the script for the container
+    await script.run(database, container); // Assuming each script has a run method
+  }
 
   //record the execution in the migration history
   if (migrations)
