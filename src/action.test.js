@@ -1,8 +1,8 @@
 jest.mock('fs', () => ({
-  fileExistsSync: jest.fn().mockReturnValue(true),
+  existsSync: jest.fn().mockReturnValue(true),
   readdirSync: jest.fn().mockReturnValue(['migration1.js', 'migration2.js']),
 }));
-const { fileExistsSync, readdirSync } = require('fs');
+const { existsSync, readdirSync } = require('fs');
 
 jest.mock('@azure/cosmos', () => ({
   CosmosClient: jest.fn().mockImplementation(() => ({
@@ -65,7 +65,7 @@ describe('migrate', () => {
     // Mock the necessary functions and objects
     const mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
 
-    fileExistsSync.mockReturnValue(false);
+    existsSync.mockReturnValue(false);
 
     process.exit = jest.fn();
 

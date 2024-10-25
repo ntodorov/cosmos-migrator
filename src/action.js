@@ -19,7 +19,7 @@ async function migrate(options) {
     errors.push('Environment var DB_URL or --dbURL option must be provided!');
   if (!key)
     errors.push('Environment var DB_KEY or --dbKey option must be provided!');
-  if (!fs.fileExistsSync(migrationsDir))
+  if (!fs.existsSync(migrationsDir))
     errors.push(
       'Environment var MIGRATIONS_DIR or --migrationsDir option must be provided and the folder must exist!'
     );

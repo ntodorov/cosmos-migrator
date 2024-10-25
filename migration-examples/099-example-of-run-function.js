@@ -4,6 +4,12 @@ const uuid = require('uuid');
 
 exports.databaseName = 'StarWars';
 exports.containerName = 'jedi';
+
+/** You can use the "run" function
+ * to execute your migration logic.
+ * BUT the update and backup responsibility is yours!!!
+ * See the next example for "updateItem" which does both.
+ */
 exports.run = async function (database, container) {
   console.log('Modifying ref data enactment');
 
@@ -18,7 +24,7 @@ exports.run = async function (database, container) {
   //<< remove to here
 
   // You could load external JSON
-  const jsonData = fs.readFileSync(__dirname + '/001-jedi-name-fix.json', {
+  const jsonData = fs.readFileSync(__dirname + '/jedi-record.json', {
     encoding: 'utf8',
   });
   const document = JSON.parse(jsonData);

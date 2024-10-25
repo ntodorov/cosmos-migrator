@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 
 function backupItem(item, scriptFullName, containerName) {
   //lets backup the item prior change.
@@ -6,6 +7,11 @@ function backupItem(item, scriptFullName, containerName) {
   const backupFolder = path.dirname(scriptFullName);
   const backupFileName = `${backupFolder}/backup-[${currentScript}]-${containerName}-id[${item.id}].json`; //to guarantee unique backup name linked to the script. You may have more than one script.
   fs.writeFileSync(backupFileName, JSON.stringify(item));
+}
+
+async function getPartitionKeyName(container) {
+  const { resource: containerDefinition } = await container.read();
+  return containerDefinition.partitionKey.paths[0].substring(1); // Remove leading '/'
 }
 
 // Execute a migration script
@@ -46,19 +52,24 @@ async function executeMigration(client, scriptPath) {
     if (!script.query)
       throw new Error('your_srcrip.query is required for updateItem()!');
 
+    const partitionKeyName = await getPartitionKeyName(container);
     // execute the script per item in the container
     const items = await container.items.query(script.query).fetchAll();
     for (const item of items.resources) {
       backupItem(item, scriptPath, script.containerName);
-      const updatedItem = script.updateItem(database, container, item);
+      const updatedItem = await script.updateItem(item);
       try {
+        // console.debug('updatedItem', updatedItem);
         const { resource: replaced } = await container
-          .item(updatedItem.id, undefined)
+          .item(updatedItem.id, updatedItem[partitionKeyName])
           .replace(updatedItem);
         console.log(`Item with id ${replaced.id} updated`);
       } catch (error) {
-        console.error(`Failed to update item with id ${item.id} `);
+        console.error(
+          `[cosmos-migrator] Failed to update item with id ${item.id} `
+        );
         console.error(error);
+        throw error;
       }
     }
   } else {
