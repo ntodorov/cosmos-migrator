@@ -19,7 +19,9 @@
     "db migrations",
     "schema migrations",
     "nosql",
-    "Consmos CLI"
+    "Consmos CLI",
+    "dbup",
+    "yuniql"
   ],
   "repository": {
     "type": "git",
