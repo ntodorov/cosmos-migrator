@@ -5,6 +5,9 @@ const { Command } = require('commander');
 const packageJson = require('../package.json');
 const { migrate } = require('./action');
 
+//making sure some packages are installed and available
+const axios = require('axios');
+
 //get command line arguments
 const program = new Command();
 program
