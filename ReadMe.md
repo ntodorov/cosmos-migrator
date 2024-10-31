@@ -121,6 +121,7 @@ exports.updateItem = function (item, axios) {
 
 Will pass you each item that matches the query and you can perform any changes to the item. Before updating the item `cosmos-migrator` will perform a backup of the original item in a file. See the backup section for more details.
 After that it will replace the item in the container with the updated by you item.
+if you return null from the `updateItem` function, the item will not be updated.
 
 #### The `run` function
 

@@ -57,10 +57,19 @@ async function executeMigration(client, scriptPath) {
     // execute the script per item in the container
     const items = await container.items.query(script.query).fetchAll();
     for (const item of items.resources) {
-      backupItem(item, scriptPath, script.containerName);
+      //deep copy the item to avoid any reference issues
+      const originalItem = JSON.parse(JSON.stringify(item));
+
       const updatedItem = await script.updateItem(item, axios);
+      if (updatedItem === null) {
+        console.log(
+          `[cosmos-migrator] Skipping item with id ${item.id} because the updateItem() returned null`
+        );
+        continue;
+      }
+      // if the returned item is not null, we need to update the item in the container
       try {
-        // console.debug('updatedItem', updatedItem);
+        backupItem(originalItem, scriptPath, script.containerName);
         const { resource: replaced } = await container
           .item(updatedItem.id, updatedItem[partitionKeyName])
           .replace(updatedItem);
