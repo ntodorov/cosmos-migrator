@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
-
+//making sure axios installed and available
+const axios = require('axios');
 function backupItem(item, scriptFullName, containerName) {
   //lets backup the item prior change.
   const currentScript = path.parse(scriptFullName).name;
@@ -57,7 +58,7 @@ async function executeMigration(client, scriptPath) {
     const items = await container.items.query(script.query).fetchAll();
     for (const item of items.resources) {
       backupItem(item, scriptPath, script.containerName);
-      const updatedItem = await script.updateItem(item);
+      const updatedItem = await script.updateItem(item, axios);
       try {
         // console.debug('updatedItem', updatedItem);
         const { resource: replaced } = await container
@@ -74,7 +75,7 @@ async function executeMigration(client, scriptPath) {
     }
   } else {
     //execute the script for the container
-    await script.run(database, container); // Assuming each script has a run method
+    await script.run(database, container, axios);
   }
 
   //record the execution in the migration history

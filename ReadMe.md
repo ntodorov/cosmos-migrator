@@ -108,7 +108,7 @@ exports.databaseName = 'StarWars';
 exports.containerName = 'jedi';
 // NOTE! Create a query with a WHERE clause to limit the items to process!!!
 exports.query = 'SELECT * FROM c WHERE c.title = "Master"';
-exports.updateItem = function (item) {
+exports.updateItem = function (item, axios) {
   //if possible avoid using if statements here, put the logic in the query!
   item.title = 'Jedi Master';
 
@@ -135,7 +135,7 @@ exports.containerName = 'jedi';
  * BUT the update and backup responsibility is yours!!!
  * See the next example for "updateItem" which does both.
  */
-exports.run = async function (database, container) {
+exports.run = async function (database, container, axios) {
   console.log('Modifying ref data enactment');
 
   // just to show how to query. Not real migration - just check for connection. Remove this block
@@ -165,6 +165,8 @@ exports.run = async function (database, container) {
   console.log('done');
 };
 ```
+
+> :warning: instance of `axios` is passed to the migration script, so you can use it if needed.
 
 ## Examples in the `migration-examples` Folder
 

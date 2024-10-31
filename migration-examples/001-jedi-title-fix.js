@@ -1,7 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-const uuid = require('uuid');
-
 exports.databaseName = 'StarWars';
 exports.containerName = 'jedi';
 // NOTE! Create a query with a WHERE clause to limit the items to process!!!
