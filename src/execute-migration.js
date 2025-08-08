@@ -10,9 +10,19 @@ function backupItem(item, scriptFullName, containerName) {
   fs.writeFileSync(backupFileName, JSON.stringify(item));
 }
 
-async function getPartitionKeyName(container) {
+async function getPartitionKeyPaths(container) {
   const { resource: containerDefinition } = await container.read();
-  return containerDefinition.partitionKey.paths[0].substring(1); // Remove leading '/'
+  const paths = containerDefinition.partitionKey?.paths || [];
+  return paths.map((p) => p.replace(/^\//, ''));
+}
+
+function getValueAtPath(objectWithData, pathExpression) {
+  return pathExpression
+    .split('/')
+    .reduce(
+      (current, key) => (current == null ? undefined : current[key]),
+      objectWithData
+    );
 }
 
 // Execute a migration script
@@ -53,7 +63,11 @@ async function executeMigration(client, scriptPath) {
     if (!script.query)
       throw new Error('your_srcrip.query is required for updateItem()!');
 
-    const partitionKeyName = await getPartitionKeyName(container);
+    const partitionKeyPaths = await getPartitionKeyPaths(container);
+    const getPartitionKeyValue = (doc) =>
+      partitionKeyPaths.length <= 1
+        ? getValueAtPath(doc, partitionKeyPaths[0] || '')
+        : partitionKeyPaths.map((p) => getValueAtPath(doc, p));
     // execute the script per item in the container
     const items = await container.items.query(script.query).fetchAll();
     for (const item of items.resources) {
@@ -70,8 +84,9 @@ async function executeMigration(client, scriptPath) {
       // if the returned item is not null, we need to update the item in the container
       try {
         backupItem(originalItem, scriptPath, script.containerName);
+        const partitionKeyValue = getPartitionKeyValue(updatedItem);
         const { resource: replaced } = await container
-          .item(updatedItem.id, updatedItem[partitionKeyName])
+          .item(updatedItem.id, partitionKeyValue)
           .replace(updatedItem);
         console.log(`Item with id ${replaced.id} updated`);
       } catch (error) {
