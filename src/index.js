@@ -4,6 +4,7 @@ const { Command } = require('commander');
 
 const packageJson = require('../package.json');
 const { migrate } = require('./action');
+const { validate } = require('./validate');
 
 //get command line arguments
 const program = new Command();
@@ -31,5 +32,14 @@ program
     'DEPRICATED! Now the cli will always check for environment variables in a .env file. '
   )
   .action(migrate);
+
+program
+  .command('validate')
+  .option(
+    '-md, --migrationsDir <full folder name>',
+    'Folder containing the migration scripts to validate. Can also be set in the environment variable MIGRATIONS_DIR'
+  )
+  .description('Validate migration scripts without executing them')
+  .action(validate);
 
 program.parse();

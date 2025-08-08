@@ -93,6 +93,34 @@ These environment variables can be set in your `.env` file.
    - `DB_KEY`: Cosmos DB key.
    - `MIGRATIONS_DIR`: Directory containing migration scripts.
 
+#### `validate`
+
+Loads migration files and validates their structure without connecting to Cosmos DB or executing any code.
+
+**Options:**
+
+- `-md, --migrationsDir <full folder name>`
+  _Description_: Specifies the directory containing migration scripts to validate.  
+  _Environment Variable_: `MIGRATIONS_DIR`
+
+**Example Usage:**
+
+```bash
+cosmos-migrator validate --migrationsDir ./migrations
+
+# or using environment variables
+export MIGRATIONS_DIR=./migrations
+cosmos-migrator validate
+```
+
+Validation rules:
+
+- The module must export an object
+- Must export `databaseName` (string) and `containerName` (string)
+- Must export either `updateItem(item, axios)` or `run(database, container, axios)`
+- If `updateItem` is present, a non-empty string `query` export is required
+- If both `updateItem` and `run` are present, a warning is emitted (not a failure)
+
 ### Migration Scripts
 
 Place your migration scripts in the directory specified by the `--migrationsDir` option or the `MIGRATIONS_DIR` environment variable. Each migration script should handle specific changes to your Cosmos DB schema or data.
