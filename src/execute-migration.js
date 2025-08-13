@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 //making sure axios installed and available
 const axios = require('axios');
+const PRECONDITION_FAILED = 412;
 function backupItem(item, scriptFullName, containerName) {
   //lets backup the item prior change.
   const currentScript = path.parse(scriptFullName).name;
@@ -23,6 +24,82 @@ function getValueAtPath(objectWithData, pathExpression) {
       (current, key) => (current == null ? undefined : current[key]),
       objectWithData
     );
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function updateItemWithRetry({
+  container,
+  script,
+  originalItem,
+  getPartitionKeyValue,
+  scriptPath,
+  containerName,
+  axiosInstance,
+  maxRetries = 5,
+  baseDelayMs = 100,
+}) {
+  let attempt = 0;
+  let didBackup = false;
+  const partitionKeyValue = getPartitionKeyValue(originalItem);
+  let currentItem = originalItem;
+
+  while (attempt < maxRetries) {
+    try {
+      const updatedItem = await script.updateItem(currentItem, axiosInstance);
+      if (updatedItem === null) {
+        console.log(
+          `[cosmos-migrator] Skipping item with id ${originalItem.id} because the updateItem() returned null`
+        );
+        return false;
+      }
+
+      if (!didBackup) {
+        backupItem(originalItem, scriptPath, containerName);
+        didBackup = true;
+      }
+
+      const { resource: replaced } = await container
+        .item(updatedItem.id, partitionKeyValue)
+        .replace(updatedItem, { ifMatch: currentItem._etag });
+      console.log(`Item with id ${replaced.id} updated`);
+      return true;
+    } catch (error) {
+      const status = error?.statusCode ?? error?.code;
+      const codeStr = typeof error?.code === 'string' ? error.code : '';
+      const isPreconditionFailed =
+        status === PRECONDITION_FAILED || codeStr === 'PreconditionFailed';
+
+      if (!isPreconditionFailed) {
+        console.error(
+          `[cosmos-migrator] Failed to update item with id ${originalItem.id} `
+        );
+        console.error(error);
+        throw error;
+      }
+
+      attempt++;
+      if (attempt >= maxRetries) {
+        console.error(
+          `[cosmos-migrator] Max retries reached for item with id ${originalItem.id} due to concurrent updates.`
+        );
+        throw error;
+      }
+
+      const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
+      await delay(delayMs);
+
+      // Read the latest version and retry transformation
+      const { resource: fresh } = await container
+        .item(originalItem.id, partitionKeyValue)
+        .read();
+      currentItem = fresh;
+    }
+  }
+
+  return false;
 }
 
 // Execute a migration script
@@ -71,29 +148,19 @@ async function executeMigration(client, scriptPath) {
     // execute the script per item in the container
     const items = await container.items.query(script.query).fetchAll();
     for (const item of items.resources) {
-      //deep copy the item to avoid any reference issues
       const originalItem = JSON.parse(JSON.stringify(item));
-
-      const updatedItem = await script.updateItem(item, axios);
-      if (updatedItem === null) {
-        console.log(
-          `[cosmos-migrator] Skipping item with id ${item.id} because the updateItem() returned null`
-        );
-        continue;
-      }
-      // if the returned item is not null, we need to update the item in the container
       try {
-        backupItem(originalItem, scriptPath, script.containerName);
-        const partitionKeyValue = getPartitionKeyValue(updatedItem);
-        const { resource: replaced } = await container
-          .item(updatedItem.id, partitionKeyValue)
-          .replace(updatedItem);
-        console.log(`Item with id ${replaced.id} updated`);
+        const updated = await updateItemWithRetry({
+          container,
+          script,
+          originalItem,
+          getPartitionKeyValue,
+          scriptPath,
+          containerName: script.containerName,
+          axiosInstance: axios,
+        });
+        if (!updated) continue;
       } catch (error) {
-        console.error(
-          `[cosmos-migrator] Failed to update item with id ${item.id} `
-        );
-        console.error(error);
         throw error;
       }
     }
